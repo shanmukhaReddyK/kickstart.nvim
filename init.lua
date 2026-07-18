@@ -981,3 +981,21 @@ end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+--
+local kitty_padding_group = vim.api.nvim_create_augroup("KittyPadding", { clear = true })
+
+-- Remove padding on Neovim startup
+vim.api.nvim_create_autocmd("VimEnter", {
+    group = kitty_padding_group,
+    callback = function()
+        vim.fn.system("kitty @ set-spacing padding=0 margin=0")
+    end,
+})
+
+-- Restore padding when exiting Neovim
+vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = kitty_padding_group,
+    callback = function()
+        vim.fn.system("kitty @ set-spacing padding=default margin=default")
+    end,
+})
