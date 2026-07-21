@@ -10,9 +10,61 @@ A starting point for Neovim that is:
 
 **NOT** a Neovim distribution, but instead a starting point for your configuration.
 
+## Quick Setup (bootstrap script)
+
+This config ships with [`bootstrap.sh`](bootstrap.sh), an idempotent script that
+installs **everything the config needs on a fresh Linux machine** — so it works
+out of the box.
+
+```sh
+# after cloning this config to ~/.config/nvim
+bash ~/.config/nvim/bootstrap.sh
+source ~/.bashrc
+nvim            # vim.pack installs plugins on first launch
+```
+
+What it sets up (safe to re-run):
+
+- **Neovim nightly** into `~/nvim-nightly` (this config uses `vim.pack` /
+  `PackChanged`, which require Neovim **>= 0.12**). No root needed.
+- **tree-sitter CLI** into `~/.local/bin` (nvim-treesitter `main` builds parsers with it).
+- **ripgrep** + **fd** (Telescope live_grep / find_files). Handles Debian/Ubuntu's
+  `fdfind` → `fd` symlink automatically.
+- **clangd**, **gcc**, **make**, **unzip** (C/kernel LSP, building, Mason extraction),
+  plus `git`, `python3`, `tmux`, and optional `ctags`/`cscope`/`bear`.
+- **PATH wiring** for `~/nvim-nightly/bin` and `~/.local/bin` in your shell rc files.
+
+Options:
+
+- Auto-detects `apt` / `dnf` / `pacman` / `zypper` for system packages.
+- Force a fresh Neovim reinstall: `FORCE_NVIM=1 bash ~/.config/nvim/bootstrap.sh`.
+- Switch channel by editing `NVIM_CHANNEL` at the top of the script (nightly is
+  required for `vim.pack`).
+
+Not handled by the script (intentionally):
+
+- **Nerd Font** — install on your terminal's host (e.g. Windows Terminal), then set
+  `vim.g.have_nerd_font = true` in `init.lua`.
+- **Kernel `compile_commands.json`** — this is per-repo and requires a build, e.g.:
+  ```sh
+  cd /path/to/linux && make -j"$(nproc)" modules_prepare && \
+    make -j"$(nproc)" drivers/gpu/drm/ && \
+    ./scripts/clang-tools/gen_compile_commands.py
+  ```
+  clangd needs this to understand kernel sources; files that weren't compiled will
+  show spurious errors.
+
+If you prefer to install things manually, follow the sections below instead.
+
 ## Installation
 
 ### Install Neovim
+
+> [!IMPORTANT]
+> This config uses `vim.pack` and the `PackChanged` event, which require
+> Neovim **>= 0.12 (nightly)**. Stable releases below 0.12 will error on
+> startup. The easiest path is to run [`bootstrap.sh`](bootstrap.sh), which
+> installs Neovim nightly for you.
 
 Kickstart.nvim targets *only* the latest
 ['stable'](https://github.com/neovim/neovim/releases/tag/stable) and latest
