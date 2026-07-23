@@ -124,6 +124,27 @@ do
   --  See `:help 'clipboard'`
   vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
 
+  -- Use OSC 52 for the system clipboard when running headless / over SSH.
+  --  In a remote TTY there is no X/Wayland display, so xclip/xsel/wl-copy can't
+  --  reach your local machine. OSC 52 sends yanks through the terminal escape
+  --  sequence to the clipboard of wherever the terminal is running.
+  --  Make sure OSC 52 is enabled in your terminal (kitty/wezterm/iterm2/tmux etc.).
+  --  See `:help clipboard-osc52`.
+  if vim.env.SSH_TTY or vim.env.SSH_CONNECTION or (vim.env.DISPLAY == nil and vim.env.WAYLAND_DISPLAY == nil) then
+    local osc52 = require 'vim.ui.clipboard.osc52'
+    vim.g.clipboard = {
+      name = 'OSC 52',
+      copy = {
+        ['+'] = osc52.copy '+',
+        ['*'] = osc52.copy '*',
+      },
+      paste = {
+        ['+'] = osc52.paste '+',
+        ['*'] = osc52.paste '*',
+      },
+    }
+  end
+
   -- Enable break indent
   vim.o.breakindent = true
 
@@ -249,7 +270,7 @@ do
   vim.api.nvim_create_autocmd('TextYankPost', {
     desc = 'Highlight when yanking (copying) text',
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
-    callback = function() vim.hl.on_yank() end,
+    callback = function() vim.hl.hl_op() end,
   })
 end
 
@@ -692,7 +713,7 @@ do
   --  See `:help lsp-config` for information about keys and how to configure
   ---@type table<string, vim.lsp.Config>
   local servers = {
-    clangd = {},
+    -- clangd = {},
     -- gopls = {},
     -- pyright = {},
     -- rust_analyzer = {},
@@ -981,21 +1002,3 @@ end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
---
-local kitty_padding_group = vim.api.nvim_create_augroup("KittyPadding", { clear = true })
-
--- Remove padding on Neovim startup
-vim.api.nvim_create_autocmd("VimEnter", {
-    group = kitty_padding_group,
-    callback = function()
-        vim.fn.system("kitty @ set-spacing padding=0 margin=0")
-    end,
-})
-
--- Restore padding when exiting Neovim
-vim.api.nvim_create_autocmd("VimLeavePre", {
-    group = kitty_padding_group,
-    callback = function()
-        vim.fn.system("kitty @ set-spacing padding=default margin=default")
-    end,
-})
